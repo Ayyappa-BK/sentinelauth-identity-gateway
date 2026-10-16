@@ -4,8 +4,9 @@ cd "$(dirname "$0")/.."
 python3 scripts/init-local.py
 docker compose up -d --build
 ready=false
-for i in $(seq 1 120); do
- if curl -fsS http://localhost:9090/actuator/health/readiness >/dev/null; then ready=true; break; fi
+deadline=$((SECONDS + 240))
+while (( SECONDS < deadline )); do
+ if curl -fsS --connect-timeout 2 --max-time 5 http://localhost:9090/actuator/health/readiness >/dev/null; then ready=true; break; fi
  sleep 2
 done
 if [ "$ready" != true ]; then docker compose logs --tail=100; exit 1; fi
@@ -34,7 +35,7 @@ done
 python3 - <<'PYMETRICS'
 import json,urllib.request,time
 for attempt in range(15):
- with urllib.request.urlopen('http://localhost:9091/api/v1/query?query=up%7Bjob%3D%22sentinelauth%22%7D') as response:
+ with urllib.request.urlopen('http://localhost:9091/api/v1/query?query=up%7Bjob%3D%22sentinelauth%22%7D',timeout=5) as response:
   data=json.load(response)
  if any(row['value'][1]=='1' for row in data['data']['result']):
   print('Verified Prometheus scrape availability and OTLP trace delivery.')

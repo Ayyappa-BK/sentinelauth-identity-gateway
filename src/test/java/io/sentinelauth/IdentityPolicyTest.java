@@ -51,6 +51,21 @@ class IdentityPolicyTest {
   }
 
   @Test
+  void rejectsMixedTransportFailoverUrl() {
+    var p =
+        new IdentityProperties(
+            "ldaps://secure:636 ldap://insecure:389",
+            "dc=test",
+            "uid=reader",
+            "secret",
+            "REALM",
+            "HTTP/gateway",
+            "/keytab",
+            false);
+    assertThatThrownBy(() -> new LdapDirectory(p)).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void absoluteSessionExpiryClearsContext() throws Exception {
     var q = new org.springframework.mock.web.MockHttpServletRequest();
     var session =

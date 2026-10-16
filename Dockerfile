@@ -1,9 +1,8 @@
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /build
 COPY pom.xml .
-RUN mvn -B dependency:go-offline
 COPY src src
-RUN mvn -B package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B -Dmaven.wagon.http.retryHandler.count=5 package -DskipTests || mvn -B -U package -DskipTests
 FROM eclipse-temurin:21-jre-jammy
 RUN groupadd -g 10001 sentinel && useradd -u 10001 -g sentinel -M sentinel
 WORKDIR /app

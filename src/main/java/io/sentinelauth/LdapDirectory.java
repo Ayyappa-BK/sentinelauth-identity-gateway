@@ -15,9 +15,16 @@ public class LdapDirectory {
 
   public LdapDirectory(IdentityProperties p) {
     this.p = p;
-    if (!p.allowInsecureLdap() && !p.ldapUrl().startsWith("ldaps://"))
+    var endpoint = java.net.URI.create(p.ldapUrl());
+    boolean tls = "ldaps".equals(endpoint.getScheme());
+    if ((!tls && !(p.allowInsecureLdap() && "ldap".equals(endpoint.getScheme())))
+        || endpoint.getHost() == null
+        || endpoint.getUserInfo() != null
+        || endpoint.getQuery() != null
+        || endpoint.getFragment() != null) {
       throw new IllegalArgumentException(
-          "LDAPS is required; plaintext LDAP is local-development only");
+          "One LDAPS endpoint is required; plaintext LDAP is local-development only");
+    }
   }
 
   private DirContext connect(String dn, String password) throws NamingException {

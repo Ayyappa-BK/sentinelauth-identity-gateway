@@ -37,6 +37,8 @@ jobs:
         run: docker compose down -v
   manifests:
     runs-on: ubuntu-latest
+    env:
+      TRIVY_SHOW_SUPPRESSED: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4.3.0
@@ -61,6 +63,7 @@ jobs:
           scanners: vuln,misconfig,secret
           skip-dirs: .secrets,work
           skip-files: .env
+          trivyignores: .trivyignore.yaml
           severity: HIGH,CRITICAL
           exit-code: '1'
           ignore-unfixed: true
@@ -68,6 +71,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: sentinelauth:ci
+          trivyignores: .trivyignore.yaml
           severity: HIGH,CRITICAL
           exit-code: '1'
           ignore-unfixed: true

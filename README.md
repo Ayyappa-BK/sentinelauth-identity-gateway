@@ -2,7 +2,7 @@
 
 Java 21 / Spring Boot 3 enterprise identity gateway with real LDAP binds, Kerberos SPNEGO through Java GSS-API, directory-backed RBAC, PostgreSQL sessions and append-only authentication audit events. The development stack contains OpenLDAP, an MIT Kerberos KDC, PostgreSQL, Prometheus and an OpenTelemetry collector.
 
-See [VERIFICATION.md](VERIFICATION.md) for observed results and unverified checks, and [SECURITY.md](SECURITY.md) for trust boundaries, scope and deployment requirements.
+See [VERIFICATION.md](VERIFICATION.md) for observed results and unverified checks, and [SECURITY.md](SECURITY.md) for trust boundaries, scope and deployment requirements. Two unused Spring MVC rendering findings have expiring, package-specific applicability exceptions; production users can supply the enterprise-patched Spring 6.2 artifacts as documented there.
 
 ## Architecture
 

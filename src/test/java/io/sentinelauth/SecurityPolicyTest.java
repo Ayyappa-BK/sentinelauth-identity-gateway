@@ -50,4 +50,24 @@ class SecurityPolicyTest {
   void authenticatedWithoutGroupDenied() throws Exception {
     mvc.perform(get("/api/me")).andExpect(status().isForbidden());
   }
+
+  @Test
+  @WithMockUser(roles = "USER")
+  void resourceHasNoEventStreamRepresentation() throws Exception {
+    mvc.perform(get("/api/resource").accept("text/event-stream"))
+        .andExpect(status().isNotAcceptable());
+  }
+
+  @Autowired org.springframework.context.ApplicationContext context;
+
+  @Test
+  void xsltRenderingIsNotConfigured() {
+    org.assertj.core.api.Assertions.assertThat(
+            context.getBeansOfType(org.springframework.web.servlet.view.xslt.XsltView.class))
+        .isEmpty();
+    org.assertj.core.api.Assertions.assertThat(
+            context.getBeansOfType(
+                org.springframework.web.servlet.view.xslt.XsltViewResolver.class))
+        .isEmpty();
+  }
 }

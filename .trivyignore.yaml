@@ -1,0 +1,10 @@
+# Reviewed applicability exceptions, not blanket suppression. See SECURITY.md.
+vulnerabilities:
+  - id: CVE-2026-47884
+    purls: ["pkg:maven/org.springframework/spring-webmvc@6.2.19"]
+    expired_at: 2026-11-15
+    statement: No XsltView or view-rendering wildcard mapping exists; all application handlers are REST responses. Spring 6.2.20 requires enterprise repository access. Reassess on any view/route change.
+  - id: CVE-2026-47890
+    purls: ["pkg:maven/org.springframework/spring-webmvc@6.2.19"]
+    expired_at: 2026-11-15
+    statement: No SSE or fragment rendering exists. SecurityPolicyTest rejects event-stream negotiation. Spring 6.2.20 requires enterprise repository access. Reassess on any streaming/view change.

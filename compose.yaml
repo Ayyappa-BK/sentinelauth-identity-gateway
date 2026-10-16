@@ -50,6 +50,7 @@ services:
       KERBEROS_REALM: SENTINEL.TEST
       KERBEROS_SERVICE_PRINCIPAL: HTTP/gateway@SENTINEL.TEST
       KERBEROS_KEYTAB: /keytabs/http.keytab
+      TRACE_SAMPLE_PROBABILITY: '1.0'
       COOKIE_SECURE: 'false'
       JAVA_TOOL_OPTIONS: -Djava.security.krb5.conf=/etc/krb5.conf
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel:4318/v1/traces

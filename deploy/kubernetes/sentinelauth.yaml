@@ -1,0 +1,224 @@
+---
+# Source: sentinelauth/templates/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sentinelauth
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: sentinelauth
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 9090
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: identity
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 636
+        - protocol: TCP
+          port: 88
+        - protocol: UDP
+          port: 88
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 4318
+---
+# Source: sentinelauth/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sentinelauth
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sentinelauth
+---
+# Source: sentinelauth/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentinelauth-config
+data:
+  DATABASE_URL: "jdbc:postgresql://postgresql.identity.svc.cluster.local:5432/sentinel?sslmode=verify-full&sslrootcert=/trust/ca.crt"
+  DATABASE_USER: "sentinel_runtime"
+  LDAP_URL: "ldaps://ldap.identity.svc.cluster.local:636"
+  LDAP_BASE_DN: "dc=example,dc=com"
+  LDAP_BIND_DN: "uid=sentinel-reader,ou=service,dc=example,dc=com"
+  KERBEROS_REALM: "EXAMPLE.COM"
+  KERBEROS_SERVICE_PRINCIPAL: "HTTP/auth.example.com@EXAMPLE.COM"
+  KERBEROS_KEYTAB: /keytabs/http.keytab
+  COOKIE_SECURE: "true"
+  ALLOW_INSECURE_LDAP: "false"
+  SPRING_FLYWAY_ENABLED: "false"
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318/v1/traces"
+  JAVA_TOOL_OPTIONS: -Djava.security.krb5.conf=/etc/kerberos/krb5.conf -Djavax.net.ssl.trustStore=/trust/truststore.p12
+  krb5.conf: |
+    [libdefaults]
+      default_realm = EXAMPLE.COM
+      dns_lookup_kdc = false
+      dns_lookup_realm = false
+      rdns = false
+      udp_preference_limit = 1
+      forwardable = false
+    [realms]
+      EXAMPLE.COM = {
+        kdc = kdc.identity.svc.cluster.local:88
+      }
+---
+# Source: sentinelauth/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinelauth
+spec:
+  selector:
+    app.kubernetes.io/name: sentinelauth
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: management
+      port: 9090
+      targetPort: management
+---
+# Source: sentinelauth/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinelauth
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sentinelauth
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sentinelauth
+      annotations:
+        checksum/config: 9ef4b67ba6d8a7512147483bfe4c31fb387ef08c7c44f6fb43f1121a1f92d242
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: gateway
+          image: "ghcr.io/your-org/sentinelauth-identity-gateway:1.0.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9090
+          envFrom:
+            - configMapRef:
+                name: sentinelauth-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentinelauth-secrets
+                  key: database-password
+            - name: LDAP_BIND_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentinelauth-secrets
+                  key: ldap-bind-password
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            failureThreshold: 60
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: management
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            periodSeconds: 15
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          volumeMounts:
+            - name: keytab
+              mountPath: /keytabs
+              readOnly: true
+            - name: kerberos
+              mountPath: /etc/kerberos
+              readOnly: true
+            - name: trust
+              mountPath: /trust
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: keytab
+          secret:
+            secretName: sentinelauth-keytab
+            defaultMode: 0440
+        - name: kerberos
+          configMap:
+            name: sentinelauth-config
+            items:
+              - key: krb5.conf
+                path: krb5.conf
+        - name: trust
+          secret:
+            secretName: sentinelauth-trust
+            defaultMode: 0440
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi

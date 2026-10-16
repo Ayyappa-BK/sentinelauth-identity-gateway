@@ -1,0 +1,45 @@
+dn: ou=people,dc=sentinel,dc=test
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=sentinel,dc=test
+objectClass: organizationalUnit
+ou: groups
+
+dn: uid=reader,dc=sentinel,dc=test
+objectClass: account
+objectClass: simpleSecurityObject
+uid: reader
+userPassword: {READER_HASH}
+
+dn: uid=alice,ou=people,dc=sentinel,dc=test
+objectClass: inetOrgPerson
+uid: alice
+cn: Alice Engineer
+sn: Engineer
+userPassword: {ALICE_HASH}
+
+dn: uid=bob,ou=people,dc=sentinel,dc=test
+objectClass: inetOrgPerson
+uid: bob
+cn: Bob Administrator
+sn: Administrator
+userPassword: {BOB_HASH}
+
+dn: uid=unprivileged,ou=people,dc=sentinel,dc=test
+objectClass: inetOrgPerson
+uid: unprivileged
+cn: Unprivileged User
+sn: User
+userPassword: {ALICE_HASH}
+
+dn: cn=sentinel-users,ou=groups,dc=sentinel,dc=test
+objectClass: groupOfNames
+cn: sentinel-users
+member: uid=alice,ou=people,dc=sentinel,dc=test
+member: uid=bob,ou=people,dc=sentinel,dc=test
+
+dn: cn=sentinel-admins,ou=groups,dc=sentinel,dc=test
+objectClass: groupOfNames
+cn: sentinel-admins
+member: uid=bob,ou=people,dc=sentinel,dc=test

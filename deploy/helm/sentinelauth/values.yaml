@@ -1,0 +1,37 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/your-org/sentinelauth-identity-gateway
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+existingSecret: sentinelauth-secrets
+keytabSecret: sentinelauth-keytab
+config:
+  databaseUrl: jdbc:postgresql://postgresql.identity.svc.cluster.local:5432/sentinel?sslmode=verify-full&sslrootcert=/trust/ca.crt
+  databaseUser: sentinel_runtime
+  ldapUrl: ldaps://ldap.identity.svc.cluster.local:636
+  ldapBaseDn: dc=example,dc=com
+  ldapBindDn: uid=sentinel-reader,ou=service,dc=example,dc=com
+  realm: EXAMPLE.COM
+  servicePrincipal: HTTP/auth.example.com@EXAMPLE.COM
+  kdc: kdc.identity.svc.cluster.local:88
+  otlpEndpoint: http://otel-collector.observability.svc.cluster.local:4318/v1/traces
+  flywayEnabled: "false"
+# Java truststore containing issuing LDAP CA, and PostgreSQL CA PEM. Required.
+trustSecret: sentinelauth-trust
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+networkPolicy:
+  enabled: true
+  ingressNamespace: ingress-nginx
+  monitoringNamespace: observability
+  identityNamespace: identity
+ingress:
+  enabled: false
+  className: nginx
+  host: auth.example.com
+  tlsSecret: sentinelauth-tls

@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: sentinelauth
+  config:
+    import: optional:configtree:/run/secrets/
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 3000
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: never
+    timeout: 15m
+server:
+  port: 8080
+  max-http-request-header-size: 72KB
+  forward-headers-strategy: none
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${COOKIE_SECURE:true}
+        same-site: strict
+      tracking-modes: cookie
+  tomcat:
+    max-http-form-post-size: 8KB
+    threads:
+      max: 100
+sentinel:
+  ldap-url: ${LDAP_URL}
+  base-dn: ${LDAP_BASE_DN}
+  bind-dn: ${LDAP_BIND_DN}
+  bind-password: ${LDAP_BIND_PASSWORD}
+  realm: ${KERBEROS_REALM}
+  service-principal: ${KERBEROS_SERVICE_PRINCIPAL}
+  keytab: ${KERBEROS_KEYTAB}
+  allow-insecure-ldap: ${ALLOW_INSECURE_LDAP:false}
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,directory
+        liveness:
+          include: livenessState
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLE_PROBABILITY:0.1}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        sentinel.auth.latency: true
+    tags:
+      application: sentinelauth
+logging:
+  structured:
+    format:
+      console: logstash

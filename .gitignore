@@ -1,0 +1,9 @@
+target/
+.env
+.secrets/
+*.keytab
+*.ccache
+work/
+.idea/
+*.iml
+.DS_Store

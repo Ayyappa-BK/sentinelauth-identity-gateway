@@ -1,0 +1,81 @@
+name: Build, real identity integration, and security validation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build-and-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and unit tests
+        run: mvn -B verify
+      - name: Real OpenLDAP, MIT KDC and PostgreSQL integration
+        run: bash scripts/integration.sh
+      - name: Reproducible LDAP scenarios
+        run: bash scripts/scenarios.sh
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=150
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-reports
+          path: |
+            target/surefire-reports
+            target/failsafe-reports
+      - name: Tear down test identity infrastructure
+        if: always()
+        run: docker compose down -v
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - run: |
+          helm lint deploy/helm/sentinelauth --strict
+          helm template sentinelauth deploy/helm/sentinelauth --namespace sentinelauth > /tmp/rendered.yaml
+          diff -u deploy/kubernetes/sentinelauth.yaml /tmp/rendered.yaml
+          bash -n scripts/*.sh infra/kerberos/entrypoint.sh infra/ldap/entrypoint.sh
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate Compose and build runtime image
+        run: |
+          python3 scripts/init-local.py
+          docker compose config -q
+          docker build -t sentinelauth:ci .
+      - name: Scan application, dependencies, image and Kubernetes configuration
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          skip-dirs: .secrets,work
+          skip-files: .env
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+      - name: Scan runtime image
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: sentinelauth:ci
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

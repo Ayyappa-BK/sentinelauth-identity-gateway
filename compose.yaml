@@ -19,7 +19,7 @@ services:
       dockerfile: infra/ldap/Dockerfile
     ports: ["127.0.0.1:1389:1389"]
     volumes:
-      - ./.secrets:/bootstrap:ro
+      - ./.secrets/bootstrap.ldif:/bootstrap.ldif:ro
       - ldap:/var/lib/ldap
   kdc:
     build:

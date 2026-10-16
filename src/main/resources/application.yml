@@ -10,6 +10,9 @@ spring:
     hikari:
       maximum-pool-size: 10
       connection-timeout: 3000
+      data-source-properties:
+        connectTimeout: 3
+        socketTimeout: 5
   session:
     store-type: jdbc
     jdbc:

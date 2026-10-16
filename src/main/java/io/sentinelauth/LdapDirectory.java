@@ -67,9 +67,15 @@ public class LdapDirectory {
               "(&(objectClass=inetOrgPerson)(uid=" + LdapEncoder.filterEncode(username) + "))",
               c);
       String dn;
+      String canonicalUsername;
       try {
         if (!users.hasMore()) throw denied();
-        dn = users.next().getNameInNamespace();
+        var entry = users.next();
+        dn = entry.getNameInNamespace();
+        var uid = entry.getAttributes().get("uid");
+        if (uid == null || uid.size() != 1) throw denied();
+        canonicalUsername = uid.get().toString();
+        if (!canonicalUsername.matches("[A-Za-z0-9._-]{1,64}")) throw denied();
         if (users.hasMore()) throw denied();
       } finally {
         users.close();
@@ -94,7 +100,7 @@ public class LdapDirectory {
         groups.close();
       }
       // No role is granted merely because a user exists in the directory.
-      return new User(dn, new DirectoryIdentity(username, List.copyOf(roles)));
+      return new User(dn, new DirectoryIdentity(canonicalUsername, List.copyOf(roles)));
     } catch (NamingException ex) {
       throw new AuthenticationServiceException("Directory unavailable", ex);
     } finally {

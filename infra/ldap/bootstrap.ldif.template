@@ -1,3 +1,7 @@
+dn: dc=sentinel,dc=test
+objectClass: domain
+dc: sentinel
+
 dn: ou=people,dc=sentinel,dc=test
 objectClass: organizationalUnit
 ou: people

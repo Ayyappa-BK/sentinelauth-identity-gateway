@@ -13,6 +13,7 @@
   <name>SentinelAuth</name>
   <properties>
     <java.version>21</java.version>
+    <postgresql.version>42.7.14</postgresql.version>
   </properties>
   <dependencies>
     <dependency>

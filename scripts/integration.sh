@@ -10,7 +10,7 @@ for i in $(seq 1 120); do
 done
 if [ "$ready" != true ]; then docker compose logs --tail=100; exit 1; fi
 mkdir -p work
-sed 's/kdc = kdc:88/kdc = localhost:1088/' infra/kerberos/krb5.conf > work/client-krb5.conf
+sed 's/kdc = kdc:1088/kdc = localhost:1088/' infra/kerberos/krb5.conf > work/client-krb5.conf
 docker compose cp kdc:/keytabs/http.keytab work/http.keytab
 mvn -B verify -Pintegration -Dsentinel.protocol=true -Djava.security.krb5.conf="$PWD/work/client-krb5.conf"
 # Both protocols must write successful audit rows to real PostgreSQL.

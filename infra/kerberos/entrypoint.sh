@@ -7,4 +7,4 @@ if [ ! -f /var/lib/krb5kdc/principal ]; then
  kadmin.local -q 'ktadd -k /keytabs/http.keytab HTTP/gateway@SENTINEL.TEST'
  chmod 0444 /keytabs/http.keytab
 fi
-exec krb5kdc -n
+exec krb5kdc -n -P /tmp/krb5kdc.pid

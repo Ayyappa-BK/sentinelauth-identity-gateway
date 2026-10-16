@@ -95,7 +95,7 @@ To debug Java on the host while infrastructure runs in Compose:
 docker compose up -d postgres ldap kdc otel
 docker compose cp kdc:/keytabs/http.keytab .secrets/http.keytab
 mkdir -p work
-sed 's/kdc = kdc:88/kdc = localhost:1088/' infra/kerberos/krb5.conf > work/krb5.conf
+sed 's/kdc = kdc:1088/kdc = localhost:1088/' infra/kerberos/krb5.conf > work/krb5.conf
 export DATABASE_URL=jdbc:postgresql://localhost:5432/sentinel DATABASE_USER=sentinel
 export DATABASE_PASSWORD="$(cat .secrets/database_password)"
 export LDAP_URL=ldap://localhost:1389 LDAP_BASE_DN=dc=sentinel,dc=test

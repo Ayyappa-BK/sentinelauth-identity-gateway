@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: infra/ldap/Dockerfile
-    ports: ["127.0.0.1:1389:389"]
+    ports: ["127.0.0.1:1389:1389"]
     volumes:
       - ./.secrets:/bootstrap:ro
       - ldap:/var/lib/ldap
@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: infra/kerberos/Dockerfile
     secrets: [kdc_master,alice_password]
-    ports: ["127.0.0.1:1088:88/tcp", "127.0.0.1:1088:88/udp"]
+    ports: ["127.0.0.1:1088:1088/tcp", "127.0.0.1:1088:1088/udp"]
     volumes: ["keytabs:/keytabs", "kdc:/var/lib/krb5kdc"]
   gateway:
     build: .
@@ -42,7 +42,7 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/sentinel
       DATABASE_USER: sentinel
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Run python3 scripts/init-local.py}
-      LDAP_URL: ldap://ldap:389
+      LDAP_URL: ldap://ldap:1389
       LDAP_BASE_DN: dc=sentinel,dc=test
       LDAP_BIND_DN: uid=reader,dc=sentinel,dc=test
       LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:?Run python3 scripts/init-local.py}
